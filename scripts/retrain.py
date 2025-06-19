@@ -3,22 +3,25 @@
 Usage:
     python scripts/retrain.py --trainer=dummy --data=data/training/training_data.parquet
 """
+
 import argparse
+import hashlib
 import json
 import time
-import hashlib
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
+# ---- MLflow helpers ---------------------------------------------------------
+import mlflow
 from loguru import logger
 
-from iteratex.training.base import DummyClassifierTrainer
-from iteratex.training.regression import DummyRegressionTrainer
-from iteratex.training.nlp import SimpleTextClassifierTrainer
 from iteratex.evaluation.evaluator import Evaluator
-from iteratex.model_registry.metadata import ModelMetadata
 from iteratex.model_registry import utils as reg
-
+from iteratex.model_registry.metadata import ModelMetadata
+from iteratex.training.base import DummyClassifierTrainer
+from iteratex.training.nlp import SimpleTextClassifierTrainer
+from iteratex.training.regression import DummyRegressionTrainer
+from iteratex.utils import mlflow_utils as mlfu
 
 TRAINERS = {
     "dummy": DummyClassifierTrainer,
@@ -30,18 +33,33 @@ TRAINERS = {
 def main():
     parser = argparse.ArgumentParser(description="IteraTex retraining job")
     parser.add_argument("--trainer", default="dummy", choices=TRAINERS.keys())
-    parser.add_argument("--metric", default="accuracy", help="Primary metric for evaluator (accuracy, rmse, etc.)")
+    parser.add_argument(
+        "--metric",
+        default="accuracy",
+        help="Primary metric for evaluator (accuracy, rmse, etc.)",
+    )
     parser.add_argument("--data", required=True, help="Path to training data (Parquet)")
     args = parser.parse_args()
 
     run_id = time.strftime("%Y%m%d-%H%M%S")
+
+    # ------------------------------------------------------------------
+    # MLflow setup – local file backend, create experiment if missing
+    # ------------------------------------------------------------------
+    mlfu.configure_local_tracking()
+    experiment_id = mlfu.get_or_create_experiment()
+    mlflow.start_run(experiment_id=experiment_id, run_name=run_id)
+    mlflow.set_tag("trainer", args.trainer)
     run_dir = reg.create_run_dir(run_id)
 
     trainer_cls = TRAINERS[args.trainer]
-    trainer = trainer_cls()
+    trainer = trainer_cls()  # type: ignore[abstract]
 
     data_path = Path(args.data)
     metrics = trainer.train(data_path=data_path, output_dir=run_dir)
+
+    # Log primary metrics to MLflow ASAP so we see progress even if later steps fail
+    mlfu.log_metrics(metrics)
 
     # ------------------------------------------------------------------
     # Persist run metadata (lineage & reproducibility)
@@ -51,9 +69,15 @@ def main():
         import joblib
 
         model = joblib.load(model_path)
-        hyperparams = model.get_params(deep=False) if hasattr(model, "get_params") else {}
+        hyperparams = (
+            model.get_params(deep=False) if hasattr(model, "get_params") else {}
+        )
+        # Log hyperparameters
+        mlfu.log_params_flat(hyperparams)
     except Exception:
-        logger.exception("Failed to load model for metadata – storing empty hyperparameters")
+        logger.exception(
+            "Failed to load model for metadata – storing empty hyperparameters"
+        )
         hyperparams = {}
 
     # Compute simple hash of training data for lineage
@@ -73,6 +97,9 @@ def main():
         logger.exception("Could not infer feature list from data; leaving empty")
         features = []
 
+        # Log artefacts to MLflow (model + metadata soon-to-be-written)
+    mlflow.log_artifact(str(model_path), artifact_path="model")
+
     meta = ModelMetadata(
         version=run_id,
         metrics=metrics,
@@ -80,6 +107,7 @@ def main():
         features=features,
         hyperparameters=hyperparams,
         training_data_version=data_hash,
+        mlflow_run_id=mlflow.active_run().info.run_id,
     )
     meta.save_json(run_dir / "metadata.json")
 
@@ -93,6 +121,9 @@ def main():
         reg.promote(run_id)
     else:
         logger.info("Candidate not better – keeping production unchanged")
+
+    # Close MLflow run
+    mlflow.end_run()
 
 
 if __name__ == "__main__":

@@ -1,0 +1,39 @@
+schema: '2.0'
+stages:
+  parse:
+    cmd: python scripts/parse_raw.py --input data/raw --output data/parsed
+    deps:
+    - path: data/raw
+      hash: md5
+      md5: 8a8141af640d162ea459f84b5738332c.dir
+      size: 36
+      nfiles: 1
+    - path: scripts/parse_raw.py
+      hash: md5
+      md5: 7390707709b09b60decd59c7f593e53b
+      size: 1483
+    outs:
+    - path: data/parsed
+      hash: md5
+      md5: 6d72879177d5105eb281b7cb0073914e.dir
+      size: 36
+      nfiles: 1
+  build_features:
+    cmd: python scripts/build_features.py --input data/parsed --output 
+      data/features
+    deps:
+    - path: data/parsed
+      hash: md5
+      md5: 6d72879177d5105eb281b7cb0073914e.dir
+      size: 36
+      nfiles: 1
+    - path: scripts/build_features.py
+      hash: md5
+      md5: f27a531efa95b632ae13f0b8aeb36393
+      size: 1406
+    outs:
+    - path: data/features
+      hash: md5
+      md5: 776f965f63fca7d437ba67307502960f.dir
+      size: 5686
+      nfiles: 1

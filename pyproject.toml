@@ -36,3 +36,20 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["."]
+
+[tool.black]
+line-length = 88
+target-version = ["py39"]
+
+[tool.ruff]
+line-length = 88
+extend-exclude = [".venv", "dist", "build"]
+fix = true
+lint.select = ["E", "F", "I", "B"]
+
+
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+check_untyped_defs = true

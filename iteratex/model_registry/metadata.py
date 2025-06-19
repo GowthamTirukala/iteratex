@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 """Model metadata representation and helpers.
 
 This module defines ``ModelMetadata`` – a pydantic model that captures the most
@@ -26,11 +24,11 @@ training_data_version
     links the model artefact back to the exact training data snapshot.
 """
 
+from __future__ import annotations
+
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
-
-import json
 
 from pydantic import BaseModel, Field, validator
 
@@ -41,7 +39,12 @@ class ModelMetadata(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     features: List[str]
     hyperparameters: Dict[str, Any] = Field(default_factory=dict)
-    training_data_version: str = Field(..., description="Hash / ID of training data snapshot")
+    training_data_version: str = Field(
+        ..., description="Hash / ID of training data snapshot"
+    )
+    mlflow_run_id: str | None = Field(
+        default=None, description="Linked MLflow run identifier"
+    )
 
     class Config:
         extra = "forbid"
@@ -69,4 +72,4 @@ class ModelMetadata(BaseModel):
 
 
 # Convenience wrappers so callers do not need to import pydantic directly
-__all__ = ["ModelMetadata"]
+__all__ = ["ModelMetadata"]  # noqa: E305

@@ -22,3 +22,5 @@ jobs:
         run: ruff check iteratex
       - name: Unit tests
         run: pytest -q
+      - name: Build Docker image
+        run: docker build -t iteratex:ci .

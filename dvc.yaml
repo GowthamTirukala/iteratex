@@ -1,0 +1,16 @@
+stages:
+  parse:
+    cmd: python scripts/parse_raw.py --input data/raw --output data/parsed
+    deps:
+      - data/raw
+      - scripts/parse_raw.py
+    outs:
+      - data/parsed
+
+  build_features:
+    cmd: python scripts/build_features.py --input data/parsed --output data/features
+    deps:
+      - data/parsed
+      - scripts/build_features.py
+    outs:
+      - data/features
