@@ -1,0 +1,23 @@
+Metadata-Version: 2.4
+Name: iteratex
+Version: 0.0.1
+Summary: Self-training AI system scaffolding for IteraTex
+Author: IteraTex Team
+Requires-Python: >=3.9
+Requires-Dist: fastapi>=0.110
+Requires-Dist: uvicorn[standard]>=0.24
+Requires-Dist: kafka-python>=2.0
+Requires-Dist: pandas>=2.2
+Requires-Dist: pyarrow>=15.0
+Requires-Dist: scikit-learn>=1.5
+Requires-Dist: pydantic>=2.6
+Requires-Dist: loguru>=0.7
+Requires-Dist: prometheus-client>=0.19
+Requires-Dist: apscheduler>=3.10
+Requires-Dist: watchdog>=4.0
+Requires-Dist: joblib>=1.4
+Provides-Extra: dev
+Requires-Dist: pytest>=8.2; extra == "dev"
+Requires-Dist: black>=24.4; extra == "dev"
+Requires-Dist: ruff>=0.4; extra == "dev"
+Requires-Dist: pre-commit>=3.6; extra == "dev"
