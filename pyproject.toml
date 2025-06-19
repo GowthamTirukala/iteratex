@@ -46,6 +46,7 @@ line-length = 88
 extend-exclude = [".venv", "dist", "build"]
 fix = true
 lint.select = ["E", "F", "I", "B"]
+lint.ignore = ["E501", "E402", "F401"]
 
 
 

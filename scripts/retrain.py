@@ -9,6 +9,7 @@ import hashlib
 import json
 import time
 from datetime import datetime
+from typing import Any, Dict
 from pathlib import Path
 
 # ---- MLflow helpers ---------------------------------------------------------
@@ -53,10 +54,14 @@ def main():
     # MLflow setup – local file backend, create experiment if missing
     # ------------------------------------------------------------------
     mlfu.configure_local_tracking()
+    # Enable automatic logging of sklearn params, metrics, artifacts
+    mlflow.autolog(log_models=True, disable=False)
     experiment_id = mlfu.get_or_create_experiment()
     mlflow.start_run(experiment_id=experiment_id, run_name=run_id)
     mlflow.set_tag("trainer", args.trainer)
     run_dir = reg.create_run_dir(run_id)
+
+    best_params: Dict[str, Any] = {}
 
     trainer_cls = TRAINERS[args.trainer]
     trainer = trainer_cls()  # type: ignore[abstract]
@@ -122,12 +127,15 @@ def main():
         # Log artefacts to MLflow (model + metadata soon-to-be-written)
     mlflow.log_artifact(str(model_path), artifact_path="model")
 
+    # Choose hyperparameters source: HPO best or model.get_params fallback
+    metadata_hparams = best_params if best_params else hyperparams
+
     meta = ModelMetadata(
         version=run_id,
         metrics=metrics,
         created_at=datetime.utcnow(),
         features=features,
-        hyperparameters=hyperparams,
+        hyperparameters=metadata_hparams,
         training_data_version=data_hash,
         mlflow_run_id=mlflow.active_run().info.run_id,
     )
