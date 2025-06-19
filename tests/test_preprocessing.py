@@ -1,4 +1,5 @@
 import pytest
+
 from iteratex.preprocessing import validate_json
 
 

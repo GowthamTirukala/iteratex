@@ -9,16 +9,15 @@ registry/
 
 This module is **code**, not the artifact directory. It is safe even if `.gitignore` excludes the artifact folder.
 """
+
 import json
 import os
-import shutil
-import sys
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from .metadata import ModelMetadata
-
 from loguru import logger
+
+from .metadata import ModelMetadata
 
 # --- Project root detection ----------------------------------------------------
 # By default we assume the code lives in an editable checkout and the registry
@@ -105,7 +104,7 @@ def _write_pointer_atomic(run_path: Path):
     pointer.
     """
     prod = production_pointer()
-    tmp = prod.with_suffix('.tmp')
+    tmp = prod.with_suffix(".tmp")
 
     # Cleanup any stale temp file
     if tmp.exists():
@@ -129,8 +128,6 @@ def _write_pointer_atomic(run_path: Path):
 
 
 import joblib
-import numpy as np
-from iteratex.preprocessing import Record
 
 
 def _smoke_test(run_path: Path) -> None:
@@ -145,9 +142,12 @@ def _smoke_test(run_path: Path) -> None:
     meta_path = run_path / "metadata.json"
     if meta_path.exists():
         from .metadata import ModelMetadata
+
         m = ModelMetadata.load_json(meta_path)
         # Use string for URL-like feature, 0 for others
-        sample = {f: ("test.com" if f.lower() == "url" else 0) for f in m.features[:100]}
+        sample = {
+            f: ("test.com" if f.lower() == "url" else 0) for f in m.features[:100]
+        }
     else:
         sample = {"feature1": 0, "feature2": 0}
 
@@ -177,13 +177,12 @@ def promote(run_id: str):
     _smoke_test(run_path)
 
     _write_pointer_atomic(run_path)
-    
 
     logger.info("Promoted run %s to production", run_id)
 
 
-
 # ---------------- Convenience helpers ----------------------------------------
+
 
 def list_runs() -> List[str]:
     """Return available run ids sorted newest→oldest."""

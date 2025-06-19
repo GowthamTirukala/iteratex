@@ -3,13 +3,13 @@
 Defines a Pydantic model for incoming Kafka records and helper functions to transform
 JSON/parquet records into feature matrices and labels to avoid train/serve skew.
 """
+
 from typing import Any, Dict, List, Tuple
 
 import numpy as np
-from sklearn.ensemble import IsolationForest
-
 import pandas as pd
 from pydantic import BaseModel, Field, ValidationError
+from sklearn.ensemble import IsolationForest
 
 
 class Record(BaseModel):

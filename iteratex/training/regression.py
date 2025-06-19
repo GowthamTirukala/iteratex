@@ -23,7 +23,10 @@ from .base import BaseTrainer
 class DummyRegressionTrainer(BaseTrainer):
     """Baseline regression trainer (predicts mean)."""
 
-    def train(self, data_path: Path, output_dir: Path) -> Dict[str, Any]:
+    def suggest_params(self, trial):  # noqa: D401
+        return {"strategy": trial.suggest_categorical("strategy", ["mean", "median"])}
+
+    def train(self, data_path: Path, output_dir: Path, **hyperparams) -> Dict[str, Any]:
         df = df_from_parquet(data_path)
         prod_run = reg.current_production_run()
         feature_cols = None
@@ -37,7 +40,8 @@ class DummyRegressionTrainer(BaseTrainer):
             X, y, test_size=0.2, random_state=42
         )
 
-        model = DummyRegressor(strategy="mean")
+        strategy = hyperparams.get("strategy", "mean")
+        model = DummyRegressor(strategy=strategy)
         weights = reliability_weights(df)
         model.fit(X_train, y_train, sample_weight=weights.loc[X_train.index])
         preds = model.predict(X_test)

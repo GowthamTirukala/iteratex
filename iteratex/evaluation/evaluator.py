@@ -1,6 +1,6 @@
 """Evaluator that compares new run metrics against production and decides promotion."""
+
 import json
-from pathlib import Path
 from typing import Dict
 
 from loguru import logger

@@ -16,13 +16,14 @@ Environment variables (optional)
     DISK_FREE_MIN_GB          – default 1
     METRICS_PORT              – default 8001
 """
+
 import json
 import os
-import time
 import shutil
+import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 import pandas as pd
 from kafka import KafkaConsumer, KafkaProducer
@@ -32,16 +33,19 @@ from prometheus_client import Counter, Gauge, start_http_server
 # Prometheus metrics
 MESSAGES_CONSUMED_TOTAL = Counter(
     "iteratex_messages_consumed_total",
-    "Total messages consumed from Kafka",)
+    "Total messages consumed from Kafka",
+)
 FLUSHES_TOTAL = Counter(
     "iteratex_flushes_total",
-    "Number of parquet batch flushes to disk",)
+    "Number of parquet batch flushes to disk",
+)
 MESSAGES_QUARANTINED_TOTAL = Counter(
     "iteratex_messages_quarantined_total",
     "Invalid records sent to quarantine topic",
 )
 BACKPRESSURE_ACTIVE = Gauge(
-    "iteratex_backpressure", "1 when ingestion is paused due to back-pressure, else 0")
+    "iteratex_backpressure", "1 when ingestion is paused due to back-pressure, else 0"
+)
 
 
 def _partitioned_path(ts: datetime) -> Path:
@@ -55,6 +59,7 @@ def _partitioned_path(ts: datetime) -> Path:
 
 from iteratex.preprocessing import validate_json
 
+
 def _flush_buffer(buffer: List[Dict[str, Any]]):
     if not buffer:
         return
@@ -62,7 +67,9 @@ def _flush_buffer(buffer: List[Dict[str, Any]]):
     path = _partitioned_path(ts)
     df = pd.DataFrame(buffer)
     # append=True requires pyarrow engine (pandas>=2.0)
-    df.to_parquet(path, index=False, compression="snappy", append=True, engine="pyarrow")
+    df.to_parquet(
+        path, index=False, compression="snappy", append=True, engine="pyarrow"
+    )
     FLUSHES_TOTAL.inc()
     logger.info("Flushed %d records to %s", len(buffer), path)
 
@@ -133,11 +140,6 @@ def consume():
             buffer.clear()
             last_flush = now
 
-
-
-
-
-    
         # Back-pressure check
         if _disk_free_gb(data_dir) < min_free_gb:
             BACKPRESSURE_ACTIVE.set(1)
@@ -163,7 +165,8 @@ def consume():
             _flush_buffer(buffer)
             buffer.clear()
             last_flush = now
-            
+
+
 def main():
     # Start Prometheus metrics server
     metrics_port = int(os.getenv("METRICS_PORT", "8001"))

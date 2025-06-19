@@ -3,14 +3,19 @@
 Currently uses a dummy model that always predicts 0.
 Will later load `registry/production/model.pkl`.
 """
-import os
-from pathlib import Path
+
 from typing import Any, Dict
 
 from fastapi import FastAPI
 from loguru import logger
+from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    Counter,
+    Gauge,
+    Histogram,
+    generate_latest,
+)
 from pydantic import BaseModel, RootModel
-from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
 from starlette.responses import Response
 
 PREDICTIONS_TOTAL = Counter("iteratex_predictions_total", "Total predictions served")
@@ -18,7 +23,9 @@ REQUEST_LATENCY = Histogram(
     "iteratex_request_latency_seconds",
     "Prediction request latency",
 )
-MODEL_VERSION_GAUGE = Gauge("iteratex_model_version_info", "Current model version", ['version'])
+MODEL_VERSION_GAUGE = Gauge(
+    "iteratex_model_version_info", "Current model version", ["version"]
+)
 
 app = FastAPI(title="IteraTex Inference API", version="0.0.1")
 
@@ -33,8 +40,8 @@ class PredictResponse(BaseModel):
 
 
 import joblib
-from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
 
 from iteratex.model_registry import utils as reg
 
@@ -50,12 +57,12 @@ def _load_model():
         if path is None:
             logger.warning("No production model found; using DummyModel")
             return DummyModel(), "dummy-0"
-        
+
         # Add debug logging
         logger.info(f"Attempting to load model from: {path.absolute()}")
         logger.info(f"File exists: {path.exists()}")
         logger.info(f"File size: {path.stat().st_size if path.exists() else 0} bytes")
-        
+
         # Try loading with .pkl first, then .joblib
         try:
             # First try with the path as is (usually .pkl)
@@ -63,13 +70,13 @@ def _load_model():
                 model = joblib.load(path)
             else:
                 # Try with .joblib extension if .pkl doesn't exist
-                joblib_path = path.with_suffix('.joblib')
+                joblib_path = path.with_suffix(".joblib")
                 logger.info(f"Trying alternative path: {joblib_path}")
                 if joblib_path.exists():
                     model = joblib.load(joblib_path)
                 else:
                     raise FileNotFoundError(f"Neither {path} nor {joblib_path} found")
-            
+
             version = path.parent.name
             MODEL_VERSION_GAUGE.labels(version=version).set(1)
             logger.info(f"Successfully loaded production model: {version}")
@@ -100,11 +107,11 @@ class _RegistryWatcher(FileSystemEventHandler):
 def _start_watcher():
     prod_pointer = reg.production_pointer()
     observer = Observer()
-    observer.schedule(_RegistryWatcher(), path=str(prod_pointer.parent), recursive=False)
+    observer.schedule(
+        _RegistryWatcher(), path=str(prod_pointer.parent), recursive=False
+    )
     observer.daemon = True
     observer.start()
-
-
 
 
 @app.on_event("startup")
@@ -125,6 +132,7 @@ async def predict(req: PredictRequest):
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
 
 # Alias for Docker healthcheck
 @app.get("/healthz")

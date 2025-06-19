@@ -1,8 +1,11 @@
 """Utility to publish N test messages to iteratex-data kafka topic."""
+
 import json
 import random
 import sys
+
 from kafka import KafkaProducer
+
 
 def main():
     n = int(sys.argv[1]) if len(sys.argv) > 1 else 250
@@ -20,6 +23,7 @@ def main():
         producer.send("iteratex-data", msg)
     producer.flush()
     print(f"Sent {n} test messages to iteratex-data on {bootstrap}")
+
 
 if __name__ == "__main__":
     main()

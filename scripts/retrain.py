@@ -39,6 +39,12 @@ def main():
         help="Primary metric for evaluator (accuracy, rmse, etc.)",
     )
     parser.add_argument("--data", required=True, help="Path to training data (Parquet)")
+    parser.add_argument(
+        "--hpo", action="store_true", help="Enable Optuna hyperparameter tuning"
+    )
+    parser.add_argument(
+        "--n-trials", type=int, default=20, help="Number of Optuna trials when --hpo"
+    )
     args = parser.parse_args()
 
     run_id = time.strftime("%Y%m%d-%H%M%S")
@@ -56,7 +62,23 @@ def main():
     trainer = trainer_cls()  # type: ignore[abstract]
 
     data_path = Path(args.data)
-    metrics = trainer.train(data_path=data_path, output_dir=run_dir)
+
+    if args.hpo:
+        from iteratex.training.optuna_utils import run_study
+
+        best_params = run_study(
+            trainer_factory=trainer_cls,
+            data_path=data_path,
+            metric=args.metric,
+            direction=("maximize" if args.metric in {"accuracy"} else "minimize"),
+            n_trials=args.n_trials,
+            study_name=f"{args.trainer}-{run_id}",
+        )
+        mlfu.log_params_flat(best_params)
+        trainer = trainer_cls()  # type: ignore[abstract]  # fresh instance
+        metrics = trainer.train(data_path=data_path, output_dir=run_dir, **best_params)
+    else:
+        metrics = trainer.train(data_path=data_path, output_dir=run_dir)
 
     # Log primary metrics to MLflow ASAP so we see progress even if later steps fail
     mlfu.log_metrics(metrics)

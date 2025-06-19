@@ -1,8 +1,9 @@
 """Test script to verify model registration and prediction."""
-import requests
-import json
+
 import sys
-from pathlib import Path
+
+import requests
+
 
 def test_prediction():
     """Test the prediction endpoint with sample data."""
@@ -63,27 +64,28 @@ def test_prediction():
         "brand_in_subdomain": 0,
         "brand_in_path": 1,
         "suspecious_tld": 0,
-        "statistical_report": 0.8
+        "statistical_report": 0.8,
     }
-    
+
     url = "http://localhost:8000/predict"
     headers = {"Content-Type": "application/json"}
-    
+
     try:
         response = requests.post(url, json=sample_data, headers=headers)
         response.raise_for_status()
         result = response.json()
-        
+
         print("✅ Prediction successful!")
         print(f"Model version: {result['model_version']}")
         print(f"Prediction: {result['prediction']}")
         return 0
     except requests.exceptions.RequestException as e:
         print(f"❌ Error making prediction: {e}")
-        if hasattr(e, 'response') and e.response is not None:
+        if hasattr(e, "response") and e.response is not None:
             print(f"Response status: {e.response.status_code}")
             print(f"Response body: {e.response.text}")
         return 1
+
 
 if __name__ == "__main__":
     print("🚀 Testing model prediction...")

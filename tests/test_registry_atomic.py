@@ -1,6 +1,7 @@
-import tempfile
 from pathlib import Path
+
 from iteratex.model_registry.utils import _write_pointer_atomic
+
 
 def test_atomic_pointer_update(tmp_path):
     run_dir = tmp_path / "run123"
